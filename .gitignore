@@ -1,0 +1,23 @@
+# Virtual environments
+deep_env/
+vggface_env/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Data / outputs
+data/
+models/
+results/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+*.pdf
+*.jpg
+*.mat

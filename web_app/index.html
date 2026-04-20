@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KinMatch.ai — Vérification de Parenté</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ADN ANIMÉ EN ARRIÈRE-PLAN -->
+  <canvas id="dnaCanvas"></canvas>
+
+  <!-- EN-TÊTE -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+            <circle cx="7" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="15" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M1 19c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M10 19c0-3.314 2.686-5 6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">KinMatch<span class="logo-dot">.ai</span></span>
+      </div>
+      <span class="header-pill">
+        <span class="pill-dot"></span>
+        Modèle en cours d'entraînement
+      </span>
+    </div>
+  </header>
+
+  <!-- SECTION HÉRO -->
+  <section class="hero">
+    <div class="hero-tag">Intelligence Artificielle · Biométrie Faciale</div>
+    <h1 class="hero-title">Vérification de<br/><span class="hero-accent">Parenté Faciale</span></h1>
+    <p class="hero-desc">Notre modèle IA analyse les similarités faciales entre deux personnes pour déterminer l'existence d'un lien de parenté.</p>
+  </section>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="main">
+
+    <!-- Carte principale -->
+    <div class="card glass">
+
+      <div class="card-header">
+        <h2 class="card-titre">Nouvelle analyse</h2>
+        <span class="card-step" id="etapeIndicateur">Étape 1 / 2 — Chargez vos photos</span>
+      </div>
+
+      <!-- Grille d'upload -->
+      <div class="upload-grid">
+
+        <!-- Zone 1 -->
+        <div class="upload-zone" id="zone1" onclick="document.getElementById('input1').click()">
+          <input type="file" id="input1" accept="image/*" hidden onchange="chargerImage(this,'zone1','preview1','nom1')" />
+          <div class="zone-vide" id="vide1">
+            <div class="upload-circle">
+              <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+                <rect x="3" y="7" width="22" height="17" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="14" cy="15" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10 7V6a2 2 0 012-2h4a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <p class="zone-label">Personne 1</p>
+            <p class="zone-hint">Cliquez pour choisir une photo</p>
+            <p class="zone-fmt">JPG · PNG · WEBP</p>
+          </div>
+          <div class="zone-pleine" id="pleine1" style="display:none;">
+            <div class="preview-ring">
+              <img id="preview1" class="photo-prev" src="" alt="Personne 1" />
+            </div>
+            <span class="tag-succes">Visage détecté</span>
+            <p class="photo-nom" id="nom1"></p>
+            <button class="btn-mini" onclick="event.stopPropagation();retirerImage('zone1','pleine1','vide1','preview1','input1')">Changer</button>
+          </div>
+        </div>
+
+        <!-- Séparateur VS -->
+        <div class="vs-wrap">
+          <div class="vs-line"></div>
+          <div class="vs-badge">VS</div>
+          <div class="vs-line"></div>
+        </div>
+
+        <!-- Zone 2 -->
+        <div class="upload-zone" id="zone2" onclick="document.getElementById('input2').click()">
+          <input type="file" id="input2" accept="image/*" hidden onchange="chargerImage(this,'zone2','preview2','nom2')" />
+          <div class="zone-vide" id="vide2">
+            <div class="upload-circle">
+              <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+                <rect x="3" y="7" width="22" height="17" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="14" cy="15" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M10 7V6a2 2 0 012-2h4a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </div>
+            <p class="zone-label">Personne 2</p>
+            <p class="zone-hint">Cliquez pour choisir une photo</p>
+            <p class="zone-fmt">JPG · PNG · WEBP</p>
+          </div>
+          <div class="zone-pleine" id="pleine2" style="display:none;">
+            <div class="preview-ring">
+              <img id="preview2" class="photo-prev" src="" alt="Personne 2" />
+            </div>
+            <span class="tag-succes">Visage détecté</span>
+            <p class="photo-nom" id="nom2"></p>
+            <button class="btn-mini" onclick="event.stopPropagation();retirerImage('zone2','pleine2','vide2','preview2','input2')">Changer</button>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="msg-etat" id="aide">Chargez les deux photos pour activer l'analyse.</p>
+
+      <button class="btn-analyser" id="btnAnalyser" disabled onclick="lancerAnalyse()">
+        <span id="btnTexte">Lancer l'analyse</span>
+        <div class="spinner" id="spinner" style="display:none;"></div>
+        <svg id="btnIco" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- ZONE RÉSULTAT -->
+      <div class="resultat" id="resultat" style="display:none;">
+
+        <div class="res-top">
+          <div class="res-icon" id="resIcon"></div>
+          <div>
+            <h3 class="res-titre" id="resultatTitre">—</h3>
+            <span class="res-badge" id="resultatBadge">—</span>
+          </div>
+        </div>
+
+        <div class="res-score-wrap">
+          <span class="res-score-num" id="scoreChiffre">0%</span>
+          <span class="res-score-label">score de confiance</span>
+        </div>
+
+        <div class="barre-fond">
+          <div class="barre-fill" id="barreRemplie" style="width:0%"></div>
+        </div>
+        <div class="barre-labels">
+          <span>0%</span><span>50%</span><span>100%</span>
+        </div>
+
+        <p class="res-note" id="resultatNote">—</p>
+
+        <button class="btn-reset" onclick="reinitialiser()">
+          Faire une nouvelle analyse
+        </button>
+      </div>
+
+    </div>
+
+    <!-- SECTION : COMMENT ÇA MARCHE -->
+    <div class="section-how">
+      <div class="section-tag">Méthodologie</div>
+      <h2 class="section-titre">Comment ça fonctionne ?</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">01</div>
+          <h3>Chargement des photos</h3>
+          <p>Sélectionnez une photo nette de chaque personne. Le visage doit être de face, net et bien éclairé.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">02</div>
+          <h3>Extraction des traits</h3>
+          <p>Le modèle IA extrait les embeddings faciaux — des vecteurs numériques encodant les traits uniques de chaque visage.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">03</div>
+          <h3>Analyse de parenté</h3>
+          <p>Un classifieur compare les deux vecteurs et calcule un score de similarité pour déterminer le lien de parenté.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION : PRÉCISION DU MODÈLE -->
+    <div class="section-accuracy">
+      <div class="acc-card glass">
+
+        <div class="acc-left">
+          <div class="section-tag">Performance du modèle</div>
+          <h2 class="acc-titre">Taux de précision</h2>
+          <p class="acc-desc">Le modèle est entraîné sur la dataset KinFaceW-II. Voici le taux de precision obtenu.</p>
+        </div>
+
+        <div class="acc-right">
+          <div class="acc-metric">
+            <div class="metric-ring-wrap">
+              <svg viewBox="0 0 80 80" width="80" height="80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e4dff5" stroke-width="7"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#BDB0EC" stroke-width="7"
+                  stroke-dasharray="201" stroke-dashoffset="201"
+                  stroke-linecap="round" transform="rotate(-90 40 40)"
+                  id="ringPrec" style="transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1) .5s"/>
+              </svg>
+              <span class="ring-val" id="precVal">—</span>
+            </div>
+            <p class="metric-label">Précision</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- PIED DE PAGE -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">KinMatch<span class="logo-dot">.ai</span></div>
+      <p class="footer-text">Projet de Mémoire de Master · Développement d'une solution Web pour la vérification de parenté basée sur l'Intelligence Artificielle</p>
+      <p class="footer-copy">Application prototype · Modèle en cours d'entraînement · 2025-2026</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
