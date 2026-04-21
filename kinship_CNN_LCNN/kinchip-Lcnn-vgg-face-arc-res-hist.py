@@ -1,22 +1,3 @@
-
-"""THE FIX
-────────
-Replace the SVM entirely with 3 direct similarity scores computed from the
-LDZP histograms. These are parameter-free, always well-conditioned, and are
-actually the standard metrics used in the LBP/LDP literature:
-
-  1. Cosine similarity      — global orientation match
-  2. L2 distance            — global magnitude difference
-  3. Chi-squared distance   — THE standard metric for histogram comparison,
-                              specifically designed for this kind of descriptor
-
-These 3 numbers replace the unstable SVM score. The LCNN then has:
-  [ArcFace pairs, FaceNet pairs, ResNet50 pairs, VGGFace pairs, 3 LDZP scores]
-
-No compression, no leakage risk, no dimensionality problem.
-────────────────────────────────────────────────────────────────────────────────
-"""
-
 import os, pickle, random
 import numpy as np
 import scipy.io as sio
@@ -112,30 +93,7 @@ def deep_pair(feats: np.ndarray,
 def ldzp_similarity_scores(feats: np.ndarray,
                             ia: np.ndarray,
                             ib: np.ndarray) -> np.ndarray:
-    """
-    Compute 3 parameter-free similarity scores between LDZP histogram vectors.
-    These are the standard metrics used in the LBP/LDP literature.
-
-    Score 1 — Cosine similarity
-        Measures global orientation match between the two histogram vectors.
-        Range: [−1, 1], higher = more similar.
-
-    Score 2 — Negative L2 distance (negated so higher = more similar)
-        Measures overall magnitude difference.
-        Range: (−∞, 0], closer to 0 = more similar.
-
-    Score 3 — Negative Chi-squared distance
-        THE standard metric for histogram comparison. For two histograms p, q:
-          χ²(p,q) = Σ (p_i − q_i)² / (p_i + q_i + ε)
-        Negated so higher = more similar.
-        This is specifically designed for non-negative histogram features.
-
-    Returns
-    -------
-    scores : float32 array of shape (N, 3)
-        One row per pair, three similarity scores.
-        No labels used — zero leakage risk.
-    """
+   
     a = feats[ia].astype(np.float64)
     b = feats[ib].astype(np.float64)
 
@@ -192,15 +150,6 @@ class Branch(nn.Module):
 
 # ─── LCNN ─────────────────────────────────────────────────────────────────────
 class LCNN(nn.Module):
-    """
-    5 branches: ArcFace / FaceNet / ResNet50 / VGGFace / LDZP-scores(3-d)
-    Fusion head: 1280 → 768 → 512 (+residual) → 256 → 128 → 1
-
-    Note: the LDZP branch receives only 3 numbers.
-    Its Branch(3) maps: Linear(3,512)→BN→ReLU→DO→Linear(512,256)→BN→ReLU→SE→DO
-    This is intentionally large relative to 3 inputs — it lets the network
-    learn complex non-linear combinations of the 3 similarity scores.
-    """
     def __init__(self, block_dims):
         super().__init__()
         self.bdims    = block_dims
@@ -378,5 +327,4 @@ for rel, res in all_results.items():
 
 overall = float(np.mean([r["mean_accuracy"] for r in all_results.values()]))
 print(f"\n  Overall : {overall*100:.2f}%")
-print(f"  Target  : ≥ 90.00%")
 print(f"  vs baseline (HistLBP) : {(overall - 0.88)*100:+.2f}%")

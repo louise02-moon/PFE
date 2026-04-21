@@ -1,7 +1,7 @@
 # Virtual environments
 deep_env/
 vggface_env/
-venv/
+deep_env_backup/
 
 # Python
 __pycache__/
@@ -19,4 +19,5 @@ results/
 .DS_Store
 
 *.pdf
+*.pkl
 *.jpg

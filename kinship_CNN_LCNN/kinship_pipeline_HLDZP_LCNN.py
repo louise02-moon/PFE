@@ -1,31 +1,3 @@
-"""
-kinship_pipeline_HLDZP_LCNN_v5.py
-────────────────────────────────────────────────────────────────────────────────
-HistLDZP-v4  →  LCNN  (diff-only pair feature, 7-method normalization ablation)
-
-NORM_METHOD options
-───────────────────
-  "zscore"    StandardScaler       — zero mean, unit variance
-  "l2"        Row-wise L2          — each sample on the unit sphere
-  "minmax"    MinMaxScaler         — each feature scaled to [0, 1]
-  "power"     Power transform      — sign(x)*|x|^POWER_ALPHA (extra squeeze on top of diff)
-  "sqrt"      Square-root          — sign(x)*√|x|  (α=0.5 special case, no scaler)
-  "log"       Log1p + zscore       — log(1+|x|)*sign(x), then z-score
-  "decimal"   Decimal scaling      — divide each feature by 10^k so max(|x|)≤1
-
-Set NORM_METHOD to whichever string you want to test. Nothing else changes.
-
-QUICK ABLATION ORDER (recommended)
-────────────────────────────────────
-  Run 1 :  NORM_METHOD = "zscore"     ← current baseline
-  Run 2 :  NORM_METHOD = "l2"
-  Run 3 :  NORM_METHOD = "power"
-  Run 4 :  NORM_METHOD = "sqrt"
-  Run 5 :  NORM_METHOD = "log"
-  Run 6 :  NORM_METHOD = "minmax"
-  Run 7 :  NORM_METHOD = "decimal"
-────────────────────────────────────────────────────────────────────────────────
-"""
 
 import pickle
 import numpy as np
@@ -38,12 +10,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  ▶▶  ABLATION SWITCH — change this one string to test each method  ◀◀
-#
-#  Options: "zscore" | "l2" | "minmax" | "power" | "sqrt" | "log" | "decimal"
-# ══════════════════════════════════════════════════════════════════════════════
 
 NORM_METHOD = "minmax"
 
@@ -474,5 +440,4 @@ for rel, res in all_results.items():
 overall = float(np.mean([r["mean_accuracy"] for r in all_results.values()]))
 prev    = 73.90
 print(f"\n  Norm method         : {NORM_METHOD}")
-print(f"  Previous (v1)       : {prev:.2f}%")
 print(f"  Overall Accuracy    : {overall*100:.2f}%")
