@@ -1,5 +1,6 @@
 
 import pickle
+from typing import List, Dict, Tuple
 import numpy as np
 import scipy.io as sio
 from sklearn.metrics import accuracy_score
@@ -11,7 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-NORM_METHOD = "minmax"
+NORM_METHOD = "l2"
 
 # ── Diff-only pair feature config (fixed from v3 ablation) ───────────────────
 POWER_ALPHA = 0.5    # exponent used in diff pair feature
@@ -30,7 +31,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device : {DEVICE}")
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
-HISTLDZP_DIR = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Methodes classiques\Hist-LDZP\HLDZP_feature_vectors"
+HISTLDZP_DIR = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Methodes_classiques\Hist-LDZP\HLDZP_feature_vectors"
 MAT_DIR      = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\lbp"
 
 RELATIONS = {
@@ -76,7 +77,7 @@ def _zscore(X_tr, X_te):
 def apply_normalization(X_train: np.ndarray,
                         X_test:  np.ndarray,
                         method:  str = NORM_METHOD
-                        ) -> tuple[np.ndarray, np.ndarray]:
+                        ) -> Tuple[np.ndarray, np.ndarray]:
     method = method.lower().strip()
 
     # ── z-score ───────────────────────────────────────────────────────────────
