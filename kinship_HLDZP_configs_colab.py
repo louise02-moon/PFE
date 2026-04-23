@@ -24,7 +24,7 @@ DATASET_PATH = f"{DRIVE_ROOT}/KinFaceW-II/KinFaceW-II/images"
 OUTPUT_DIR   = f"{DRIVE_ROOT}/Methodes_classiques/Hist-LDZP"
 MAT_DIR      = "/content/PFE/lbp"
 
-EXTRACT = True   # True = extract features first, False = skip to LCNN grid
+EXTRACT = False   # True = extract features first, False = skip to LCNN grid
 
 # ── Extraction grid ───────────────────────────────────────────────────────────
 EXTRACT_CONFIGS = [
