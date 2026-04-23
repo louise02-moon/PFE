@@ -19,10 +19,10 @@ print(f"Device: {DEVICE}")
 # ①  USER SETTINGS — edit only this section
 # ══════════════════════════════════════════════════════════════════════════════
 
-DRIVE_ROOT   = "/content/drive/MyDrive/PFE"
+DRIVE_ROOT   = "/content/drive/MyDrive"
 DATASET_PATH = f"{DRIVE_ROOT}/KinFaceW-II/KinFaceW-II/images"
-OUTPUT_DIR   = f"{DRIVE_ROOT}/Methodes classiques/Hist-LDZP/HLDZP_feature_vectors_grid"
-MAT_DIR      = f"{DRIVE_ROOT}/lbp"
+OUTPUT_DIR   = f"{DRIVE_ROOT}/Methodes_classiques/Hist-LDZP"
+MAT_DIR      = "/content/PFE/lbp"
 
 EXTRACT = True   # True = extract features first, False = skip to LCNN grid
 
@@ -38,25 +38,25 @@ EXTRACT_CONFIGS = [
 # ── Normalizations to test ────────────────────────────────────────────────────
 # str = single norm, tuple = apply each independently then concatenate
 NORM_CONFIGS = [
-    "power",               # sqrt(|x|) then mean-center — best for histograms
-    "l1",                  # divide by L1 norm
+    #"power",               # sqrt(|x|) then mean-center — best for histograms
+    #"l1",                  # divide by L1 norm
     "l2",                  # unit vector
-    "zscore",              # zero mean unit variance
-    ("power", "l2"),       # both concatenated
-    ("power", "zscore"),   # both concatenated
+    #"zscore",              # zero mean unit variance
+    #("power", "l2"),       # both concatenated
+    #("power", "zscore"),   # both concatenated
 ]
 
 # ── Pair fusion methods to test ───────────────────────────────────────────────
 # str = single method, tuple = concatenate multiple
 PAIR_CONFIGS = [
     "abs_diff",
-    ("abs_diff", "product"),
-    ("abs_diff", "product", "cosine"),
-    ("abs_diff", "product", "euclidean", "cosine"),
+    #("abs_diff", "product"),
+    #("abs_diff", "product", "cosine"),
+    #("abs_diff", "product", "euclidean", "cosine"),
 ]
 
 # ── LCNN training settings ────────────────────────────────────────────────────
-LCNN_EPOCHS   = 250
+LCNN_EPOCHS   = 300
 LCNN_PATIENCE = 25
 LCNN_LR       = 5e-4
 LCNN_BATCH    = 32

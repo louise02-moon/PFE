@@ -7,3 +7,29 @@
   Config       : ps32_ss2_k3
   Norm         : power
   Pair fusion  : abs_diff+product+euclidean+cosine
+2 
+FD     FS     MD     MS      Overall
+73.2%  73.8%  77.4%  77.0%   75.35%                       
+
+  Best overall : 75.35%
+  Config       : ps32_ss2_k3
+  Norm         : power
+  Pair fusion  : abs_diff+product
+3 
+
+FD     FS     MD     MS       Overal
+71.8%  71.4%  74.8%  76.2%   73.55%
+ Best overall : 73.55%
+
+Best overall : 73.55%
+  Config       : ps32_ss2_k3
+  Norm         : power
+  Pair fusion  : abs_diff+product+cosine
+4 
+FD     FS     MD     MS      Overall
+70.2%  72.6%  76.2%  74.6%   73.40%
+
+  Best overall : 73.40%
+  Config       : ps32_ss2_k3
+  Norm         : l2
+  Pair fusion  : abs_diff+product
