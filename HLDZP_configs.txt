@@ -1,0 +1,9 @@
+======================================================================
+#   Tag                  Norm                     Pair                                       FD     FS     MD     MS  Overall
+-------------------------------------------------------------------------------------------------------------------
+1   ps32_ss2_k3          power                    abs_diff+product+euclidean+cosine       69.6%  72.6%  77.0%  76.0%   73.80%
+
+  Best overall : 73.80%
+  Config       : ps32_ss2_k3
+  Norm         : power
+  Pair fusion  : abs_diff+product+euclidean+cosine
