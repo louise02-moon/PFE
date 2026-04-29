@@ -1,0 +1,152 @@
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: zscore  |  Pair: abs_diff+product+cosine  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          72.20%    5.84%
+Father-Son               82.40%    4.32%
+Mother-Daughter          83.80%    2.71%
+Mother-Son               81.20%    3.49%
+
+  Overall  : 79.90%
+
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power  |  Pair: abs_diff+product  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          74.60%    1.36%
+Father-Son               81.00%    2.61%
+Mother-Daughter          84.80%    3.60%
+Mother-Son               83.00%    3.74%
+
+  Overall  : 80.85%
+
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2+zscore  |  Pair: abs_diff+product  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          72.40%    2.06%
+Father-Son               82.60%    3.07%
+Mother-Daughter          85.40%    4.32%
+Mother-Son               82.60%    2.42%
+
+  Overall  : 80.75%
+
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2  |  Pair: abs_diff  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          70.60%    4.59%
+Father-Son               79.20%    2.79%
+Mother-Daughter          83.40%    4.54%
+Mother-Son               81.00%    4.29%
+
+  Overall  : 78.55%
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN  (600 epochs)
+  Norm: power+l2  |  Pair: abs_diff+product  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          76.60%    3.20%
+Father-Son               82.20%    3.66%
+Mother-Daughter          87.20%    1.60%
+Mother-Son               81.60%    5.16%
+  Overall  : 81.90%
+
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+minmax  |  Pair: abs_diff+product  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          75.80%    2.32%
+Father-Son               84.60%    4.08%
+Mother-Daughter          85.20%    2.40%
+Mother-Son               81.20%    3.19%
+   Overall : 81.7%
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+minmax+l2  |  Pair: abs_diff+product  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          75.80%    2.86%
+Father-Son               80.80%    3.19%
+Mother-Daughter          84.00%    3.41%
+Mother-Son               83.20%    2.23%
+
+ Overall : 80.95%
+
+
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2  |  Pair: abs_diff+product+cosine  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          76.80%    4.02%
+Father-Son               80.20%    1.94%
+Mother-Daughter          85.00%    2.61%
+Mother-Son               83.00%    5.18%
+ Overall : 81.25%
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2+l1  |  Pair: abs_diff+product+euclidean  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          74.40%    2.33%
+Father-Son               80.00%    3.29%
+Mother-Daughter          83.60%    3.38%
+Mother-Son               81.00%    2.76%
+ Overall : 79.75%
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2  |  Pair: abs_diff+product+euclidean  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          76.60%    2.94%
+Father-Son               81.60%    0.49%
+Mother-Daughter          85.40%    3.20%
+Mother-Son               83.00%    3.29%
+ Overall :81.65% 
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power+l2  |  Pair: abs_diff+product+cosine  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          76.80%    4.02%
+Father-Son               80.20%    1.94%
+Mother-Daughter          85.00%    2.61%
+Mother-Son               83.00%    5.18%
+ Overall : 81.25%
+
+=================================================================
+  FINAL SUMMARY — Multi-Deep LCNN
+  Norm: power  |  Pair: abs_diff+product+cosine  |  PowerInPair: ON
+=================================================================
+Relation                   Mean      Std
+------------------------------------------
+Father-Daughter          78.00%    4.34%
+Father-Son               81.60%    4.08%
+Mother-Daughter          85.40%    2.06%
+Mother-Son               81.80%    4.21%
+Overall :81.7%

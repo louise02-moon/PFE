@@ -1,0 +1,780 @@
+"""
+═══════════════════════════════════════════════════════════════════════════════
+  DeepZigZag Fusion LCNN  —  Best Configuration (Google Colab)
+  Dataset  : KinFaceW-II
+  Features : ArcFace + FaceNet + ResNet50 + VGGFace + ResNet101 (deep)
+             + HistZigZag ps32_ss4 (84% standalone)
+  Split    : 5-Fold Cross-Validation (80% train / 10% val / 10% test)
+
+  COLAB SETUP:
+      from google.colab import drive
+      drive.mount('/content/drive')
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
+import os, pickle, random, time
+import numpy as np
+import scipy.io as sio
+import cv2
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset, WeightedRandomSampler
+import warnings
+warnings.filterwarnings("ignore")
+
+random.seed(42); np.random.seed(42); torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(42)
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Device : {DEVICE}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  USER SETTINGS  — update these paths for your machine
+# ══════════════════════════════════════════════════════════════════════════════
+
+DATASET_PATH  = "/content/drive/MyDrive/KinFaceW-II/KinFaceW-II/images"
+OUTPUT_DIR    = "/content/drive/MyDrive/Methodes_classiques/Hist-LDZP/HistZigZag/ps32_ss4"
+MAT_DIR       = "/content/PFE/lbp"
+
+ARCFACE_DIR   = "/content/drive/MyDrive/Apprentissage_profond/ArcFace/arcface_embeddings"
+FACENET_DIR   = "/content/drive/MyDrive/Apprentissage_profond/FaceNet/facenet_embeddings"
+RESNET50_DIR  = "/content/drive/MyDrive/Apprentissage_profond/ResNet50/resnet50_embeddings"
+VGGFACE_DIR   = "/content/drive/MyDrive/Apprentissage_profond/VGGFace/vggface_embeddings"
+RESNET101_DIR = "/content/drive/MyDrive/Apprentissage_profond/ResNet101/resnet101_embeddings"
+
+EXTRACT = False   # set True to re-extract HistZigZag features from images
+
+# ZigZag / LBP extraction settings
+PATCH_SIZE = 32
+STEP_SIZE  = 4
+NUM_BINS   = 59
+IMAGE_SIZE = (64, 64)
+
+RELATIONS = ["FD", "FS", "MD", "MS"]
+REL_NAMES = {"FD": "Father-Daughter", "FS": "Father-Son",
+             "MD": "Mother-Daughter", "MS": "Mother-Son"}
+
+DEEP_PATHS = {
+    "FD": {
+        "arcface"  : f"{ARCFACE_DIR}/ArcFace_FD.pkl",
+        "facenet"  : f"{FACENET_DIR}/FaceNet_FD.pkl",
+        "resnet50" : f"{RESNET50_DIR}/ResNet50_FD.pkl",
+        "vggface"  : f"{VGGFACE_DIR}/VGGFace_FD.pkl",
+        "resnet101": f"{RESNET101_DIR}/ResNet101_FD.pkl",
+        "mat"      : f"{MAT_DIR}/LBP_fd.mat",
+    },
+    "FS": {
+        "arcface"  : f"{ARCFACE_DIR}/ArcFace_FS.pkl",
+        "facenet"  : f"{FACENET_DIR}/FaceNet_FS.pkl",
+        "resnet50" : f"{RESNET50_DIR}/ResNet50_FS.pkl",
+        "vggface"  : f"{VGGFACE_DIR}/VGGFace_FS.pkl",
+        "resnet101": f"{RESNET101_DIR}/ResNet101_FS.pkl",
+        "mat"      : f"{MAT_DIR}/LBP_fs.mat",
+    },
+    "MD": {
+        "arcface"  : f"{ARCFACE_DIR}/ArcFace_MD.pkl",
+        "facenet"  : f"{FACENET_DIR}/FaceNet_MD.pkl",
+        "resnet50" : f"{RESNET50_DIR}/ResNet50_MD.pkl",
+        "vggface"  : f"{VGGFACE_DIR}/VGGFace_MD.pkl",
+        "resnet101": f"{RESNET101_DIR}/ResNet101_MD.pkl",
+        "mat"      : f"{MAT_DIR}/LBP_md.mat",
+    },
+    "MS": {
+        "arcface"  : f"{ARCFACE_DIR}/ArcFace_MS.pkl",
+        "facenet"  : f"{FACENET_DIR}/FaceNet_MS.pkl",
+        "resnet50" : f"{RESNET50_DIR}/ResNet50_MS.pkl",
+        "vggface"  : f"{VGGFACE_DIR}/VGGFace_MS.pkl",
+        "resnet101": f"{RESNET101_DIR}/ResNet101_MS.pkl",
+        "mat"      : f"{MAT_DIR}/LBP_ms.mat",
+    },
+}
+
+# ── Per-relation hyperparameters ───────────────────────────────────────────────
+# Deep-branch config inherited from deep_lcnn (83%)
+# ZigZag config inherited from kinship-Lcnn-vgg (87%)
+# Fusion scheduler: WarmRestarts for MD/MS, cosine for FD/FS
+REL_HP = {
+    "FD": dict(
+        epochs=600, lr=3e-4, weight_decay=5e-4, patience=50,
+        batch=16, mixup_alpha=0.4,
+        drop_deep=0.35, drop_zz=0.35, drop_cls1=0.35, drop_cls2=0.25,
+        se_r=4, pw_boost=1.0, use_sampler=True,
+        scheduler="cosine",
+        focal_loss=True,   # FD benefits from focal loss (from deep_lcnn)
+    ),
+    "FS": dict(
+        epochs=600, lr=3e-4, weight_decay=5e-4, patience=50,
+        batch=16, mixup_alpha=0.4,
+        drop_deep=0.35, drop_zz=0.35, drop_cls1=0.35, drop_cls2=0.25,
+        se_r=4, pw_boost=1.0, use_sampler=True,
+        scheduler="cosine",
+        focal_loss=False,
+    ),
+    "MD": dict(
+        epochs=300, lr=6e-4, weight_decay=2e-4, patience=30,
+        batch=16, mixup_alpha=0.15,
+        drop_deep=0.20, drop_zz=0.15, drop_cls1=0.20, drop_cls2=0.10,
+        se_r=4, pw_boost=1.5, use_sampler=True,
+        scheduler="warmrestart",
+        focal_loss=False,
+    ),
+    "MS": dict(
+        epochs=400, lr=5e-4, weight_decay=2e-4, patience=50,
+        batch=16, mixup_alpha=0.15,
+        drop_deep=0.20, drop_zz=0.15, drop_cls1=0.20, drop_cls2=0.10,
+        se_r=4, pw_boost=1.5, use_sampler=True,
+        scheduler="warmrestart",
+        focal_loss=False,
+    ),
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ZIGZAG / LBP EXTRACTION  (from HIST_zzlbp_81_.py)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def zigzag_indices(n: int) -> np.ndarray:
+    indices = []
+    for s in range(2 * n - 1):
+        if s % 2 == 0:
+            for i in range(min(s, n-1), max(0, s-n+1)-1, -1):
+                indices.append((i, s - i))
+        else:
+            for i in range(max(0, s-n+1), min(s, n-1)+1):
+                indices.append((i, s - i))
+    return np.array(indices)
+
+def build_uniform_table(num_bins: int) -> np.ndarray:
+    table = np.zeros(256, dtype=np.int32)
+    ub = 0
+    for code in range(256):
+        bits  = [(code >> j) & 1 for j in range(8)]
+        trans = sum(bits[i] != bits[(i+1) % 8] for i in range(8))
+        if trans <= 2:
+            table[code] = ub; ub += 1
+        else:
+            table[code] = num_bins - 1
+    return table
+
+ZZ_IDX     = zigzag_indices(PATCH_SIZE)
+ULBP_TABLE = build_uniform_table(NUM_BINS)
+_OFFSETS   = [(-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1)]
+
+def lbp_fast(channel: np.ndarray) -> np.ndarray:
+    h, w = channel.shape
+    lbp  = np.zeros((h, w), dtype=np.uint8)
+    c    = channel[1:-1, 1:-1]
+    for bit, (dr, dc) in enumerate(_OFFSETS):
+        neighbor = channel[1+dr:h-1+dr, 1+dc:w-1+dc]
+        lbp[1:-1, 1:-1] |= np.uint8((neighbor >= c).astype(np.uint8) << bit)
+    return lbp
+
+def extract_patches(lbp_map: np.ndarray) -> np.ndarray:
+    h, w     = lbp_map.shape
+    rows     = range(0, h - PATCH_SIZE + 1, STEP_SIZE)
+    cols     = range(0, w - PATCH_SIZE + 1, STEP_SIZE)
+    s_h, s_w = lbp_map.strides
+    shape    = (len(rows), len(cols), PATCH_SIZE, PATCH_SIZE)
+    strides  = (s_h * STEP_SIZE, s_w * STEP_SIZE, s_h, s_w)
+    patches  = np.lib.stride_tricks.as_strided(lbp_map, shape=shape, strides=strides)
+    return patches.reshape(len(rows) * len(cols), PATCH_SIZE, PATCH_SIZE)
+
+def patches_to_hists(patches: np.ndarray) -> np.ndarray:
+    r, c  = ZZ_IDX[:, 0], ZZ_IDX[:, 1]
+    zz    = patches[:, r, c].astype(np.int32)
+    N     = patches.shape[0]
+    hists = np.zeros((N, NUM_BINS), dtype=np.float32)
+    for i in range(N):
+        np.add.at(hists[i], zz[i], 1)
+    hists /= (hists.sum(axis=1, keepdims=True) + 1e-8)
+    return hists
+
+def extract_histzigzag(image_path: str) -> np.ndarray | None:
+    img = cv2.imread(image_path)
+    if img is None:
+        print(f"  [WARN] {image_path}"); return None
+    img      = cv2.resize(img, IMAGE_SIZE)
+    channels = [
+        img[:,:,2], img[:,:,1], img[:,:,0],
+        *cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2HSV)),
+        *cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)),
+    ]
+    all_hists = []
+    for ch in channels:
+        lbp     = lbp_fast(ch.astype(np.float32))
+        ulbp    = ULBP_TABLE[lbp]
+        patches = extract_patches(ulbp)
+        all_hists.append(patches_to_hists(patches))
+    return np.concatenate(all_hists, axis=1).ravel().astype(np.float32)
+
+def run_extraction() -> None:
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    print(f"\n[EXTRACT]  patch={PATCH_SIZE}  step={STEP_SIZE}  bins={NUM_BINS}")
+    t0 = time.time()
+    for rel in RELATIONS:
+        rel_path = os.path.join(DATASET_PATH, rel)
+        if not os.path.isdir(rel_path):
+            print(f"  [ERREUR] dossier introuvable : {rel_path}"); continue
+        files   = sorted([f for f in os.listdir(rel_path)
+                          if f.lower().endswith((".jpg",".png",".jpeg"))])
+        vectors = []; t1 = time.time()
+        for k, fname in enumerate(files):
+            vec = extract_histzigzag(os.path.join(rel_path, fname))
+            if vec is not None: vectors.append(vec)
+            if (k+1) % 50 == 0:
+                eta = (time.time()-t1)/(k+1) * (len(files)-k-1)
+                print(f"  {rel}  {k+1:>3}/{len(files)}  ETA {eta:.0f}s")
+        if not vectors:
+            print(f"  [WARN] aucun vecteur pour {rel}"); continue
+        mat = np.array(vectors, dtype=np.float32)
+        out = os.path.join(OUTPUT_DIR, f"HistLDZP_{rel}.pkl")
+        with open(out, "wb") as f: pickle.dump(mat, f)
+        print(f"  ✓ {rel}: {mat.shape}  → {out}")
+    print(f"\nExtraction terminée en {time.time()-t0:.1f}s")
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  LOADERS  (from deep_lcnn_83_)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def load_deep_embedding(path: str) -> np.ndarray:
+    with open(path, "rb") as f:
+        data = pickle.load(f)
+    if isinstance(data, dict) and "features" not in data:
+        feats = np.array([data[k] for k in sorted(data.keys())], dtype=np.float64)
+    elif isinstance(data, dict) and "features" in data:
+        feats = np.array(data["features"], dtype=np.float64)
+    else:
+        feats = np.array(data, dtype=np.float64)
+    norms = np.linalg.norm(feats, axis=1, keepdims=True)
+    return (feats / (norms + 1e-8)).astype(np.float32)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PAIR FEATURE BUILDERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def power_norm(X: np.ndarray, alpha: float = 0.5) -> np.ndarray:
+    return np.sign(X) * (np.abs(X) ** alpha)
+
+def build_deep_pair(feats: np.ndarray, idxa, idxb) -> np.ndarray:
+    """
+    From deep_lcnn_83_: diff + prod + L2dist + cosine (power-normalized).
+    Best config per the report's Code Analysis sheet.
+    """
+    a    = feats[idxa].astype(np.float64)
+    b    = feats[idxb].astype(np.float64)
+    diff = power_norm(np.abs(a - b))
+    prod = power_norm(a * b)
+    dist = power_norm(np.linalg.norm(a - b, axis=1, keepdims=True))
+    cos  = np.sum(
+        a / (np.linalg.norm(a, axis=1, keepdims=True) + 1e-8) *
+        b / (np.linalg.norm(b, axis=1, keepdims=True) + 1e-8),
+        axis=1, keepdims=True
+    )
+    return np.concatenate([diff, prod, dist, cos], axis=1).astype(np.float32)
+
+def build_zigzag_pair(feats: np.ndarray, idxa, idxb) -> np.ndarray:
+    """
+    Exact config that gave 84%: abs_diff + product + euclidean + cosine
+    NO power norm inside — zscore applied externally via normalize_splits.
+    """
+    a = feats[idxa].astype(np.float64)
+    b = feats[idxb].astype(np.float64)
+
+    diff = np.abs(a - b)
+    prod = a * b
+    eucl = np.linalg.norm(a - b, axis=1, keepdims=True)
+
+    an  = a / (np.linalg.norm(a, axis=1, keepdims=True) + 1e-8)
+    bn  = b / (np.linalg.norm(b, axis=1, keepdims=True) + 1e-8)
+    cos = np.sum(an * bn, axis=1, keepdims=True)
+
+    return np.concatenate([diff, prod, eucl, cos], axis=1).astype(np.float32)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  NORMALISATION  (StandardScaler — matches the 84% standalone config)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def normalize_splits(X_tr, X_va, X_te):
+    sc = StandardScaler()
+    return (sc.fit_transform(X_tr).astype(np.float32),
+            sc.transform(X_va).astype(np.float32),
+            sc.transform(X_te).astype(np.float32))
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FOCAL LOSS  (from deep_lcnn, for FD relation)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, logits, targets):
+        bce = nn.functional.binary_cross_entropy_with_logits(
+                  logits, targets, reduction='none')
+        pt  = torch.exp(-bce)
+        return (self.alpha * (1 - pt) ** self.gamma * bce).mean()
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SE BLOCK
+# ══════════════════════════════════════════════════════════════════════════════
+
+class SEBlock(nn.Module):
+    def __init__(self, d, r=4):
+        super().__init__()
+        self.se = nn.Sequential(
+            nn.Linear(d, max(1, d//r)), nn.ReLU(),
+            nn.Linear(max(1, d//r), d), nn.Sigmoid())
+    def forward(self, x): return x * self.se(x)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  LOCAL BRANCH  (one per deep model, from deep_lcnn_83_)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class LocalBranch(nn.Module):
+    def __init__(self, input_dim, hidden=512, out=256,
+                 drop1=0.35, drop2=0.20, se_r=4):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden),
+            nn.BatchNorm1d(hidden), nn.ReLU(), nn.Dropout(drop1),
+            nn.Linear(hidden, out),
+            nn.BatchNorm1d(out),   nn.ReLU(),
+            SEBlock(out, r=se_r),  nn.Dropout(drop2),
+        )
+        self.shortcut = nn.Sequential(
+            nn.Linear(input_dim, out),
+            nn.BatchNorm1d(out),
+        )
+    def forward(self, x): return self.net(x) + self.shortcut(x)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  FUSION ARCHITECTURE  —  DeepBranches + ZigZagBranch → Final Head
+# ══════════════════════════════════════════════════════════════════════════════
+
+class DeepZigZagFusionLCNN(nn.Module):
+    """
+    Best-of-both architecture:
+      • 5 LocalBranch (one per deep model)  → fused via MLP + residual
+      • 1 ZigZag branch (SEBlock + residual)
+      • Final head over [deep_fused ∥ zz_out]
+    """
+    def __init__(self,
+                 block_dims   : list,   # [dim_arc, dim_fn, dim_rn50, dim_vgg, dim_rn101]
+                 zigzag_dim   : int,
+                 local_out    : int   = 256,
+                 drop_deep    : float = 0.35,
+                 drop_zz      : float = 0.35,
+                 drop_cls1    : float = 0.35,
+                 drop_cls2    : float = 0.25,
+                 se_r         : int   = 4):
+        super().__init__()
+        self.block_dims = block_dims
+        self.zigzag_dim = zigzag_dim
+        self.local_out  = local_out
+
+        # ── 5 deep local branches ──────────────────────────────────────────
+        self.local_branches = nn.ModuleList([
+            LocalBranch(dim, hidden=512, out=local_out,
+                        drop1=drop_deep, drop2=max(0.05, drop_deep - 0.15),
+                        se_r=se_r)
+            for dim in block_dims
+        ])
+
+        # ── Deep fusion MLP  (512→256→128) with residual ──────────────────
+        fusion_dim = local_out * len(block_dims)   # 256×5 = 1280
+        self.deep_fusion = nn.Sequential(
+            nn.Linear(fusion_dim, 512),
+            nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.40),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.30),
+            nn.Linear(256, local_out),
+            nn.BatchNorm1d(local_out), nn.ReLU(),
+        )
+        self.deep_res = nn.Sequential(
+            nn.Linear(fusion_dim, local_out),
+            nn.BatchNorm1d(local_out),
+        )
+
+        # ── ZigZag branch ─────────────────────────────────────────────────
+        self.zz_mlp = nn.Sequential(
+            nn.Linear(zigzag_dim, 512),
+            nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(drop_zz),
+            nn.Linear(512, local_out),
+            nn.BatchNorm1d(local_out), nn.ReLU(),
+            SEBlock(local_out, r=se_r),
+            nn.Dropout(max(0.05, drop_zz - 0.10)),
+        )
+        self.zz_res = nn.Sequential(
+            nn.Linear(zigzag_dim, local_out),
+            nn.BatchNorm1d(local_out),
+        )
+
+        # ── Final classifier over [deep_fused ∥ zz_out] ───────────────────
+        head_in = local_out * 2   # 256 + 256 = 512
+        self.head = nn.Sequential(
+            nn.Linear(head_in, 256),
+            nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(drop_cls1),
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(64),  nn.ReLU(), nn.Dropout(drop_cls2),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, x):
+        # ── deep branches ─────────────────────────────────────────────────
+        total_deep = sum(self.block_dims)
+        x_deep = x[:, :total_deep]
+        x_zz   = x[:, total_deep:]
+
+        splits     = torch.split(x_deep, self.block_dims, dim=1)
+        local_outs = [branch(blk) for branch, blk
+                      in zip(self.local_branches, splits)]
+        fused      = torch.cat(local_outs, dim=1)
+
+        h_deep = self.deep_fusion(fused) + self.deep_res(fused)
+
+        # ── zigzag branch ─────────────────────────────────────────────────
+        h_zz = self.zz_mlp(x_zz) + self.zz_res(x_zz)
+
+        # ── classification ────────────────────────────────────────────────
+        return self.head(torch.cat([h_deep, h_zz], dim=1)).squeeze(1)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  AUGMENTATION  (mixup + cutmix from deep_lcnn)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def mixup_batch(Xb, yb, alpha=0.4):
+    lam = np.random.beta(alpha, alpha)
+    idx = torch.randperm(Xb.size(0), device=Xb.device)
+    return lam*Xb + (1-lam)*Xb[idx], lam*yb + (1-lam)*yb[idx]
+
+def cutmix_batch(Xb, yb, alpha=1.0):
+    lam       = np.random.beta(alpha, alpha)
+    idx       = torch.randperm(Xb.size(0), device=Xb.device)
+    cut_len   = int(Xb.size(1) * (1 - lam))
+    cut_start = random.randint(0, max(Xb.size(1) - cut_len - 1, 0))
+    Xb_mix    = Xb.clone()
+    Xb_mix[:, cut_start:cut_start+cut_len] = Xb[idx, cut_start:cut_start+cut_len]
+    return Xb_mix, lam*yb + (1-lam)*yb[idx]
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TRAIN / EVAL LOOPS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def train_epoch(model, loader, optimizer, criterion,
+                epoch, warmup=10, rel="FD", mixup_alpha=0.4):
+    model.train()
+    use_aug = epoch >= warmup
+    for Xb, yb in loader:
+        Xb, yb = Xb.to(DEVICE), yb.to(DEVICE)
+        Xb = Xb + torch.randn_like(Xb) * 0.006   # light jitter
+        if use_aug:
+            r = random.random()
+            if rel == "FD":
+                if   r < 0.35: Xb, yb = mixup_batch(Xb, yb, alpha=mixup_alpha)
+                elif r < 0.65: Xb, yb = cutmix_batch(Xb, yb)
+            else:
+                if r < 0.5: Xb, yb = mixup_batch(Xb, yb, alpha=mixup_alpha)
+        optimizer.zero_grad()
+        loss = criterion(model(Xb), yb)
+        loss.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.5)
+        optimizer.step()
+
+def evaluate(model, loader, tta_runs=5):
+    model.eval()
+    all_preds, all_labels = [], []
+    with torch.no_grad():
+        for Xb, yb in loader:
+            Xb = Xb.to(DEVICE)
+            probs = torch.zeros(Xb.size(0), device=DEVICE)
+            for t in range(tta_runs):
+                noise = torch.randn_like(Xb) * 0.003 if t > 0 else 0.0
+                probs += torch.sigmoid(model(Xb + noise))
+            probs /= tta_runs
+            all_preds.extend((probs >= 0.5).long().cpu().numpy())
+            all_labels.extend(yb.numpy())
+    return accuracy_score(all_labels, all_preds)
+
+def make_loader(X, y, shuffle=False, use_sampler=False, batch_size=16):
+    dataset = TensorDataset(torch.tensor(X, dtype=torch.float32),
+                            torch.tensor(y, dtype=torch.float32))
+    if use_sampler and shuffle:
+        y_int   = y.astype(int)
+        counts  = np.bincount(y_int)
+        weights = 1.0 / counts[y_int]
+        sampler = WeightedRandomSampler(
+            torch.tensor(weights, dtype=torch.float32),
+            num_samples=len(y), replacement=True)
+        return DataLoader(dataset, batch_size=batch_size, sampler=sampler,
+                          worker_init_fn=lambda _: np.random.seed(42))
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  TRAINING LOOP
+# ══════════════════════════════════════════════════════════════════════════════
+
+def train_model(X_tr, y_tr, X_va, y_va,
+                block_dims, zigzag_dim, rel="FD"):
+    hp = REL_HP[rel]
+    epochs  = hp["epochs"]
+    batch   = hp["batch"]
+
+    tl = make_loader(X_tr, y_tr, shuffle=True,
+                     use_sampler=hp["use_sampler"], batch_size=batch)
+    vl = make_loader(X_va, y_va, batch_size=batch)
+
+    model = DeepZigZagFusionLCNN(
+        block_dims  = block_dims,
+        zigzag_dim  = zigzag_dim,
+        drop_deep   = hp["drop_deep"],
+        drop_zz     = hp["drop_zz"],
+        drop_cls1   = hp["drop_cls1"],
+        drop_cls2   = hp["drop_cls2"],
+        se_r        = hp["se_r"],
+    ).to(DEVICE)
+
+    # ── Loss ──────────────────────────────────────────────────────────────
+    if hp["focal_loss"]:
+        criterion = FocalLoss(alpha=0.25, gamma=2.0)
+        print(f"    → Focal Loss for {REL_NAMES[rel]}")
+    else:
+        pw_base  = (y_tr == 0).sum() / max((y_tr == 1).sum(), 1)
+        pw_final = pw_base * hp["pw_boost"]
+        criterion = nn.BCEWithLogitsLoss(
+            pos_weight=torch.tensor([pw_final], dtype=torch.float32).to(DEVICE))
+
+    optimizer = optim.AdamW(model.parameters(),
+                             lr=hp["lr"],
+                             weight_decay=hp["weight_decay"],
+                             betas=(0.9, 0.999))
+
+    # ── Scheduler ─────────────────────────────────────────────────────────
+    if hp["scheduler"] == "warmrestart":
+        scheduler      = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, T_0=50, T_mult=2, eta_min=1e-6)
+    else:
+        def lrf(ep):
+            warmup = 10
+            if ep < warmup: return (ep + 1) / warmup
+            return 0.5 * (1 + np.cos(np.pi * (ep - warmup) / max(1, epochs - warmup)))
+        scheduler = optim.lr_scheduler.LambdaLR(optimizer, lrf)
+
+    best_acc, best_state, wait = 0.0, None, 0
+
+    for ep in range(epochs):
+        train_epoch(model, tl, optimizer, criterion,
+                    epoch=ep, warmup=10, rel=rel,
+                    mixup_alpha=hp["mixup_alpha"])
+        scheduler.step()
+
+        val_acc = evaluate(model, vl, tta_runs=3)
+
+        if val_acc > best_acc:
+            best_acc   = val_acc
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+            wait = 0
+        else:
+            wait += 1
+            if wait >= hp["patience"]:
+                print(f"    Early stop ep.{ep+1} | best val={best_acc*100:.2f}%")
+                break
+
+        if (ep + 1) % 100 == 0:
+            print(f"    Epoch {ep+1:3d} | val={val_acc*100:.2f}% | best={best_acc*100:.2f}%")
+
+    model.load_state_dict(best_state)
+    return model
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  SPLIT  (80 / 10 / 10 — same as kinship-Lcnn)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def split_fold_half(fold_mask: np.ndarray, seed: int = 42):
+    indices = np.where(fold_mask)[0]
+    rng     = np.random.RandomState(seed)
+    rng.shuffle(indices)
+    mid     = len(indices) // 2
+    mask_te = np.zeros(len(fold_mask), dtype=bool)
+    mask_va = np.zeros(len(fold_mask), dtype=bool)
+    mask_te[indices[:mid]]  = True
+    mask_va[indices[mid:]]  = True
+    return mask_te, mask_va
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  MAIN EXPERIMENT
+# ══════════════════════════════════════════════════════════════════════════════
+
+def run_experiment():
+    all_results = []
+
+    for rel in RELATIONS:
+        hp = REL_HP[rel]
+        print(f"\n{'='*70}")
+        print(f"  Relation : {REL_NAMES[rel]}")
+        print(f"  HP  lr={hp['lr']}  wd={hp['weight_decay']}  "
+              f"batch={hp['batch']}  epochs={hp['epochs']}")
+        print(f"      scheduler={hp['scheduler']}  focal={hp['focal_loss']}  "
+              f"pw_boost={hp['pw_boost']}")
+        print(f"{'='*70}")
+
+        # ── Load HistZigZag ───────────────────────────────────────────────
+        pkl = os.path.join(OUTPUT_DIR, f"HistLDZP_{rel}.pkl")
+        if not os.path.exists(pkl):
+            print(f"  [WARN] missing: {pkl}"); return None
+        with open(pkl, "rb") as f:
+            zz_feats = np.array(pickle.load(f), dtype=np.float32)
+
+        # ── Load deep embeddings ──────────────────────────────────────────
+        dp  = DEEP_PATHS[rel]
+        arc = load_deep_embedding(dp["arcface"])
+        fn  = load_deep_embedding(dp["facenet"])
+        rn  = load_deep_embedding(dp["resnet50"])
+        vgg = load_deep_embedding(dp["vggface"])
+        rn1 = load_deep_embedding(dp["resnet101"])
+
+        print(f"  HistZigZag : {zz_feats.shape}")
+        print(f"  ArcFace    : {arc.shape}")
+        print(f"  FaceNet    : {fn.shape}")
+        print(f"  ResNet50   : {rn.shape}")
+        print(f"  VGGFace    : {vgg.shape}")
+        print(f"  ResNet101  : {rn1.shape}")
+
+        # ── Load .mat ─────────────────────────────────────────────────────
+        mat  = sio.loadmat(dp["mat"])
+        idxa = mat['idxa'].flatten() - 1
+        idxb = mat['idxb'].flatten() - 1
+        fold = mat['fold'].flatten()
+        y    = mat['matches'].flatten()
+
+        # ── Build pair features ───────────────────────────────────────────
+        arc_pairs = build_deep_pair(arc, idxa, idxb)
+        fn_pairs  = build_deep_pair(fn,  idxa, idxb)
+        rn_pairs  = build_deep_pair(rn,  idxa, idxb)
+        vgg_pairs = build_deep_pair(vgg, idxa, idxb)
+        rn1_pairs = build_deep_pair(rn1, idxa, idxb)
+        zz_pairs  = build_zigzag_pair(zz_feats, idxa, idxb)
+
+        block_dims = [arc_pairs.shape[1], fn_pairs.shape[1],
+                      rn_pairs.shape[1],  vgg_pairs.shape[1],
+                      rn1_pairs.shape[1]]
+        zigzag_dim = zz_pairs.shape[1]
+
+        X_deep = np.concatenate([arc_pairs, fn_pairs, rn_pairs,
+                                  vgg_pairs, rn1_pairs], axis=1)
+        X      = np.concatenate([X_deep, zz_pairs], axis=1)
+
+        print(f"\n  Deep pair vectors  (5 models) : {X_deep.shape[1]} dims")
+        print(f"  ZigZag pair vector            : {zigzag_dim} dims")
+        print(f"  Total X                       : {X.shape}")
+
+        fold_scores = []
+
+        for fi in range(1, 6):
+            torch.manual_seed(42 + fi)
+            np.random.seed(42 + fi)
+            random.seed(42 + fi)
+
+            fold_mask           = (fold == fi)
+            test_mask, val_mask = split_fold_half(fold_mask, seed=42 + fi)
+            train_mask          = ~fold_mask
+
+            X_tr_raw = X[train_mask]; y_tr = y[train_mask]
+            X_va_raw = X[val_mask];   y_va = y[val_mask]
+            X_te_raw = X[test_mask];  y_te = y[test_mask]
+
+            n = len(y)
+            print(f"\n  Fold {fi}/5  →  "
+                  f"train={len(y_tr)} ({100*len(y_tr)/n:.0f}%)  "
+                  f"val={len(y_va)} ({100*len(y_va)/n:.0f}%)  "
+                  f"test={len(y_te)} ({100*len(y_te)/n:.0f}%)")
+
+            X_tr_sc, X_va_sc, X_te_sc = normalize_splits(X_tr_raw, X_va_raw, X_te_raw)
+
+            model = train_model(
+                X_tr_sc, y_tr,
+                X_va_sc, y_va,
+                block_dims = block_dims,
+                zigzag_dim = zigzag_dim,
+                rel        = rel,
+            )
+
+            acc = evaluate(model,
+                           make_loader(X_te_sc, y_te, batch_size=hp["batch"]),
+                           tta_runs=7)
+            fold_scores.append(acc)
+            print(f"  → Fold {fi} Test Accuracy : {acc*100:.2f}%")
+
+        rel_acc = float(np.mean(fold_scores))
+        rel_std = float(np.std(fold_scores))
+        print(f"\n  ╔══════════════════════════════════════════╗")
+        print(f"  ║  {REL_NAMES[rel]:<28}       ║")
+        print(f"  ║  Accuracy : {rel_acc*100:.2f}% ± {rel_std*100:.2f}%            ║")
+        print(f"  ╚══════════════════════════════════════════╝")
+        all_results.append((rel, rel_acc, rel_std))
+
+    return all_results
+
+
+def main():
+    for path, label in [(MAT_DIR, "MAT_DIR")]:
+        if not os.path.isdir(path):
+            print(f"[ERREUR] {label} introuvable : {path}"); return
+
+    if EXTRACT:
+        if not os.path.isdir(DATASET_PATH):
+            print(f"[ERREUR] DATASET_PATH introuvable : {DATASET_PATH}"); return
+        run_extraction()
+
+    print("\n[INFO] Checking feature files...")
+    all_ok = True
+    for rel in RELATIONS:
+        pkl = os.path.join(OUTPUT_DIR, f"HistLDZP_{rel}.pkl")
+        ok  = os.path.exists(pkl)
+        print(f"  {rel}: {'✓' if ok else '✗ MISSING'}  {pkl}")
+        if not ok: all_ok = False
+    if not all_ok:
+        print("\n[ERREUR] Set EXTRACT=True to generate features."); return
+
+    print("\n" + "="*70)
+    print("  DeepZigZag Fusion LCNN — Best Configuration")
+    print("  ArcFace + FaceNet + ResNet50 + VGGFace + ResNet101 + HistZigZag")
+    print("  FD/FS : cosine scheduler + Focal (FD) / BCEw+  (FS)")
+    print("  MD/MS : WarmRestarts T0=50 + pw_boost=1.5")
+    print("  Scaler: StandardScaler  |  TTA runs=7  |  Mixup + CutMix (FD)")
+    print("="*70)
+
+    t0     = time.time()
+    result = run_experiment()
+    if result is None:
+        print("SKIPPED — check feature files."); return
+
+    accs    = [acc for _, acc, _ in result]
+    overall = float(np.mean(accs))
+
+    print("\n" + "─"*70)
+    print("  FINAL RESULTS")
+    print("─"*70)
+    for rel, acc, std in result:
+        marker = "✅" if acc >= 0.87 else "⚠️ "
+        print(f"  {marker}  {REL_NAMES[rel]:<22}  {acc*100:.2f}% ± {std*100:.2f}%")
+    print("─"*70)
+    print(f"  Overall Mean                {overall*100:.2f}%")
+    print(f"  Baseline HistZigZag alone   81.00%")
+    print(f"  All-Deep LCNN (83%)         83.00%")
+    print(f"  Deep+ZigZag Fusion (87%)    87.00%")
+    print(f"  Total time                  {(time.time()-t0)/60:.1f} min")
+    print("─"*70)
+    gain  = (overall - 0.83) * 100
+    marker = "✅" if overall >= 0.87 else "⚠️ "
+    print(f"  Gain vs All-Deep 83% : {gain:+.2f}%")
+    print(f"  {marker}  Overall vs 87% target : {(overall - 0.87)*100:+.2f}%")
+    print("─"*70)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,69 +1,18 @@
-ps32_ss2_k3======================================================================
-#   Tag                  Norm                     Pair                                       FD     FS     MD     MS  Overall
--------------------------------------------------------------------------------------------------------------------
-1   ps32_ss2_k3          power                    abs_diff+product+euclidean+cosine       69.6%  72.6%  77.0%  76.0%   73.80%
+[  1/40] ps16_ss8     norm=power              pair=abs_diff                                 -> 65.80%  (FD=61.6 FS=65.6 MD=64.4 MS=71.6)
+  [  2/40] ps16_ss8     norm=power              pair=abs_diff+product                         -> 70.40%  (FD=67.6 FS=69.6 MD=73.2 MS=71.2)
 
-  Best overall : 73.80%
-  Config       : ps32_ss2_k3
-  Norm         : power
-  Pair fusion  : abs_diff+product+euclidean+cosine
-2 
-FD     FS     MD     MS      Overall
-73.2%  73.8%  77.4%  77.0%   75.35%                       
-
-  Best overall : 75.35%
-  Config       : ps32_ss2_k3
-  Norm         : power
-  Pair fusion  : abs_diff+product
-3 
-
-FD     FS     MD     MS       Overal
-71.8%  71.4%  74.8%  76.2%   73.55%
- Best overall : 73.55%
-
-Best overall : 73.55%
-  Config       : ps32_ss2_k3
-  Norm         : power
-  Pair fusion  : abs_diff+product+cosine
-4 
-FD     FS     MD     MS      Overall
-70.2%  72.6%  76.2%  74.6%   73.40%
-
-  Best overall : 73.40%
-  Config       : ps32_ss2_k3
-  Norm         : l2
-  Pair fusion  : abs_diff+product
-
-
-
-
-ps16_ss2_k3
-
- 1
-ps16_ss2_k3          power                    abs_diff                                61.0%  64.4%  65.8%  73.0%   66.05%
-
-  Best overall : 66.05%
-  Config       : ps16_ss2_k3
-  Norm         : power
-  Pair fusion  : abs_diff
-2
-
-
-
-
-
-
-PS16_SS8
-
-RÉSUMÉ FINAL — HistZigZag + LCNN
-=================================================================
-  Father-Daughter      : 76.80% ± 3.06%
-                         folds : ['82.00%', '73.00%', '76.00%', '78.00%', '75.00%']
-  Father-Son           : 82.20% ± 4.45%
-                         folds : ['75.00%', '88.00%', '83.00%', '80.00%', '85.00%']
-  Mother-Daughter      : 79.80% ± 0.98%
-                         folds : ['78.00%', '80.00%', '80.00%', '80.00%', '81.00%']
-  Mother-Son           : 83.40% ± 3.72%
-                         folds : ['86.00%', '85.00%', '85.00%', '85.00%', '76.00%']
-
-  Overall moyen : 80.55%
+ [  1/60] ps32_ss4     norm=power              pair=abs_diff                                 -> 81.40%  (FD=81.2 FS=83.2 MD=79.2 MS=82.0)
+  [  2/60] ps32_ss4     norm=power              pair=abs_diff+product                         -> 83.40%  (FD=82.8 FS=82.8 MD=83.6 MS=84.4)
+  [  3/60] ps32_ss4     norm=power              pair=abs_diff+product+cosine                  -> 82.90%  (FD=82.4 FS=82.8 MD=83.2 MS=83.2)
+  [  4/60] ps32_ss4     norm=power              pair=abs_diff+product+euclidean+cosine        -> 82.50%  (FD=82.8 FS=81.6 MD=81.2 MS=84.4)
+  [  5/60] ps32_ss4     norm=l2                 pair=abs_diff                                 -> 75.00%  (FD=75.2 FS=74.8 MD=71.2 MS=78.8)
+  [  6/60] ps32_ss4     norm=l2                 pair=abs_diff+product                         -> 80.50%  (FD=80.4 FS=79.6 MD=80.8 MS=81.2)
+  [  7/60] ps32_ss4     norm=l2                 pair=abs_diff+product+cosine                  -> 82.20%  (FD=82.4 FS=79.6 MD=81.6 MS=85.2)
+  [  8/60] ps32_ss4     norm=l2                 pair=abs_diff+product+euclidean+cosine        -> 80.00%  (FD=80.0 FS=75.6 MD=78.4 MS=86.0)
+  [  9/60] ps32_ss4     norm=zscore             pair=abs_diff                                 -> 81.60%  (FD=83.6 FS=82.4 MD=79.2 MS=81.2)
+  [ 10/60] ps32_ss4     norm=zscore             pair=abs_diff+product                         -> 83.40%  (FD=81.2 FS=84.4 MD=85.6 MS=82.4)
+  [ 11/60] ps32_ss4     norm=zscore             pair=abs_diff+product+cosine                  -> 81.90%  (FD=81.2 FS=82.4 MD=80.8 MS=83.2)
+  [ 12/60] ps32_ss4     norm=zscore             pair=abs_diff+product+euclidean+cosine        -> 84.00%  (FD=83.2 FS=83.6 MD=83.6 MS=85.6)
+  [ 13/60] ps32_ss4     norm=power+l2           pair=abs_diff                                 -> 82.80%  (FD=81.6 FS=82.8 MD=82.4 MS=84.4)
+  [ 14/60] ps32_ss4     norm=power+l2           pair=abs_diff+product                         -> 82.60%  (FD=82.0 FS=82.8 MD=81.6 MS=84.0)
+  [ 15/60] ps32_ss4     norm=power+l2           pair=abs_diff+product+cosine                  -> 83.00%  (FD=82.0 FS=84.4 MD=81.6 MS=84.0)

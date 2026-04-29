@@ -1,4 +1,4 @@
-[24/04/2026 18:16] Karima: import os, pickle, random, time
+import os, pickle, random, time
 import numpy as np
 import scipy.io as sio
 import cv2
@@ -22,16 +22,16 @@ print(f"Device : {DEVICE}")
 # ①  USER SETTINGS
 # ══════════════════════════════════════════════════════════════════════════════
 
-DATASET_PATH   = r"C:\Users\Mazouni\Desktop\Karima\PFE\KinFaceW-II\images"
-OUTPUT_DIR     = r"C:\Users\Mazouni\Desktop\Karima\PFE\Methodes classiques\HistZigZag\features"
-MAT_DIR        = r"C:\Users\Mazouni\Desktop\Karima\PFE\lbp"
+DATASET_PATH   = r"C:\Users\surface laptop 5\Downloads\KinFaceW-II\KinFaceW-II\images"
+OUTPUT_DIR     = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Methodes_classiques\Hist-LDZP\HLDZP_feature_vectors"
+MAT_DIR        = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\lbp"
 
-ARCFACE_DIR  = r"C:\Users\Mazouni\Desktop\Karima\PFE\Apprentissage profond\ArcFace\arcface_embeddings"
-FACENET_DIR  = r"C:\Users\Mazouni\Desktop\Karima\PFE\Apprentissage profond\FaceNet\facenet_embeddings"
-RESNET50_DIR = r"C:\Users\Mazouni\Desktop\Karima\PFE\Apprentissage profond\ResNet50\resnet50_embeddings"
-VGGFACE_DIR  = r"C:\Users\Mazouni\Desktop\Karima\PFE\Apprentissage profond\VGGFace\vggface_embeddings"
+ARCFACE_DIR  = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Apprentissage_profond\ArcFace\arcface_embeddings"
+FACENET_DIR  = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Apprentissage_profond\FaceNet\facenet_embeddings"
+RESNET50_DIR = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Apprentissage_profond\ResNet50\resnet50_embeddings"
+VGGFACE_DIR  = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Apprentissage_profond\VGGFace\vggface_embeddings"
 
-EXTRACT    = False
+EXTRACT    = True
 
 PATCH_SIZE = 16
 STEP_SIZE  = 8
@@ -47,25 +47,25 @@ DEEP_PATHS = {
         "arcface" : f"{ARCFACE_DIR}\\ArcFace_FD.pkl",
         "facenet" : f"{FACENET_DIR}\\FaceNet_FD.pkl",
         "resnet50": f"{RESNET50_DIR}\\ResNet50_FD.pkl",
-        "vggface" : f"{VGGFACE_DIR}\\VGG16_FD.pkl",
+        "vggface" : f"{VGGFACE_DIR}\\VGGFace_FD.pkl",
     },
     "FS": {
         "arcface" : f"{ARCFACE_DIR}\\ArcFace_FS.pkl",
         "facenet" : f"{FACENET_DIR}\\FaceNet_FS.pkl",
         "resnet50": f"{RESNET50_DIR}\\ResNet50_FS.pkl",
-        "vggface" : f"{VGGFACE_DIR}\\VGG16_FS.pkl",
+        "vggface" : f"{VGGFACE_DIR}\\VGGFace_FS.pkl",
     },
     "MD": {
         "arcface" : f"{ARCFACE_DIR}\\ArcFace_MD.pkl",
         "facenet" : f"{FACENET_DIR}\\FaceNet_MD.pkl",
         "resnet50": f"{RESNET50_DIR}\\ResNet50_MD.pkl",
-        "vggface" : f"{VGGFACE_DIR}\\VGG16_MD.pkl",
+        "vggface" : f"{VGGFACE_DIR}\\VGGFace_MD.pkl",
     },
     "MS": {
         "arcface" : f"{ARCFACE_DIR}\\ArcFace_MS.pkl",
         "facenet" : f"{FACENET_DIR}\\FaceNet_MS.pkl",
         "resnet50": f"{RESNET50_DIR}\\ResNet50_MS.pkl",
-        "vggface" : f"{VGGFACE_DIR}\\VGG16_MS.pkl",
+        "vggface" : f"{VGGFACE_DIR}\\VGGFace_MS.pkl",
     },
 }
 
@@ -75,7 +75,8 @@ DEEP_PATHS = {
 #     MD/MS  : relations mère  → LR plus élevé, dropout réduit,
 #                                mixup doux, patience plus longue
 # ══════════════════════════════════════════════════════════════════════════════
-[24/04/2026 18:16] Karima: REL_HP = {
+
+REL_HP = {
     "FD": dict(
         lr           = 3e-4,
         weight_decay = 5e-4,
@@ -193,7 +194,8 @@ def lbp_fast(channel: np.ndarray) -> np.ndarray:
 # ══════════════════════════════════════════════════════════════════════════════
 # ⑥  EXTRACTION PATCHES + HISTOGRAMMES ZIGZAG
 # ══════════════════════════════════════════════════════════════════════════════
-[24/04/2026 18:16] Karima: def extract_patches(lbp_map: np.ndarray) -> np.ndarray:
+
+def extract_patches(lbp_map: np.ndarray) -> np.ndarray:
     h, w     = lbp_map.shape
     rows     = range(0, h - PATCH_SIZE + 1, STEP_SIZE)
     cols     = range(0, w - PATCH_SIZE + 1, STEP_SIZE)
@@ -279,8 +281,9 @@ def load_deep_embedding(path: str) -> np.ndarray:
 # ══════════════════════════════════════════════════════════════════════════════
 # ⑨  CONSTRUCTION DES PAIRES
 # ══════════════════════════════════════════════════════════════════════════════
-[24/04/2026 18:16] Karima: def power_norm(X: np.ndarray, alpha: float = 0.5) -> np.ndarray:
-    return np.sign(X) * (np.abs(X)  alpha)
+
+def power_norm(X: np.ndarray, alpha: float = 0.5) -> np.ndarray:
+    return np.sign(X) * (np.abs(X) ** alpha)
 
 def build_deep_pair(feats: np.ndarray, idxa, idxb) -> np.ndarray:
     a    = feats[idxa].astype(np.float64)
@@ -304,7 +307,7 @@ def build_zigzag_pair(feats: np.ndarray, idxa, idxb) -> np.ndarray:
     bn   = b / (np.linalg.norm(b, axis=1, keepdims=True) + 1e-8)
     cos  = np.sum(an * bn, axis=1, keepdims=True)
 
-    chi2 = (a - b)  2 / (np.abs(a) + np.abs(b) + 1e-8)
+    chi2 = (a - b) ** 2 / (np.abs(a) + np.abs(b) + 1e-8)
     chi2 = power_norm(chi2)
 
     return np.concatenate([diff, prod, cos, chi2], axis=1).astype(np.float32)
@@ -322,23 +325,25 @@ def normalize_splits(X_tr, X_va, X_te):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class SEBlock(nn.Module):
-    def init(self, d, r=4):
-        super().init()
+    def __init__(self, d, r=4):
+        super().__init__()
         self.se = nn.Sequential(
             nn.Linear(d, max(1, d//r)), nn.ReLU(),
             nn.Linear(max(1, d//r), d), nn.Sigmoid())
-    def forward(self, x): return x * self.se(x)
+
+    def forward(self, x):
+        return x * self.se(x)
 
 
 class DeepZigZagLCNN(nn.Module):
-    def init(self, deep_total_dim: int, zigzag_dim: int,
+    def __init__(self, deep_total_dim: int, zigzag_dim: int,
                  out: int = 256,
                  drop_deep: float = 0.40,
                  drop_zz:   float = 0.35,
                  drop_cls1: float = 0.35,
                  drop_cls2: float = 0.25,
                  se_r:      int   = 4):
-        super().init()
+        super().__init__()
         self.deep_total_dim = deep_total_dim
         self.zigzag_dim     = zigzag_dim
 
@@ -378,7 +383,8 @@ class DeepZigZagLCNN(nn.Module):
             nn.BatchNorm1d(64),  nn.ReLU(), nn.Dropout(drop_cls2),
             nn.Linear(64, 1),
         )
-[24/04/2026 18:16] Karima: def forward(self, x):
+
+    def forward(self, x):
         x_deep = x[:, :self.deep_total_dim]
         x_zz   = x[:, self.deep_total_dim:]
         h_deep = self.deep_mlp(x_deep) + self.deep_res(x_deep)
@@ -456,8 +462,8 @@ def train_lcnn(X_tr, y_tr, X_va, y_va,
                         weight_decay = hp["weight_decay"],
                         betas        = (0.9, 0.999))
 
-    epochs  = hp["epochs"]
-    patience= hp["patience"]
+    epochs   = hp["epochs"]
+    patience = hp["patience"]
 
     def lrf(ep):
         warmup = 10
@@ -490,7 +496,8 @@ def train_lcnn(X_tr, y_tr, X_va, y_va,
 
 def run_experiment() -> list | None:
     relation_accs = []
-[24/04/2026 18:16] Karima: for rel in RELATIONS:
+
+    for rel in RELATIONS:
         hp = REL_HP[rel]
         print(f"\n{'='*65}")
         print(f"  Relation : {REL_NAMES[rel]}")
@@ -579,7 +586,8 @@ def run_experiment() -> list | None:
             acc = evaluate(model, make_loader(X_te_sc, y_te))
             fold_scores.append(acc)
             print(f"  → Fold {fi} Test Accuracy : {acc*100:.2f}%")
-[24/04/2026 18:16] Karima: rel_acc = float(np.mean(fold_scores))
+
+        rel_acc = float(np.mean(fold_scores))
         rel_std = float(np.std(fold_scores))
         print(f"\n  ╔══════════════════════════════════════════╗")
         print(f"  ║  {REL_NAMES[rel]:<28}       ║")
@@ -648,5 +656,5 @@ def main() -> None:
     print("─"*65)
 
 
-if name == "main":
+if __name__ == "__main__":
     main()
