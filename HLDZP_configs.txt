@@ -1,18 +1,41 @@
-[  1/40] ps16_ss8     norm=power              pair=abs_diff                                 -> 65.80%  (FD=61.6 FS=65.6 MD=64.4 MS=71.6)
-  [  2/40] ps16_ss8     norm=power              pair=abs_diff+product                         -> 70.40%  (FD=67.6 FS=69.6 MD=73.2 MS=71.2)
+ps16_ss8
 
- [  1/60] ps32_ss4     norm=power              pair=abs_diff                                 -> 81.40%  (FD=81.2 FS=83.2 MD=79.2 MS=82.0)
-  [  2/60] ps32_ss4     norm=power              pair=abs_diff+product                         -> 83.40%  (FD=82.8 FS=82.8 MD=83.6 MS=84.4)
-  [  3/60] ps32_ss4     norm=power              pair=abs_diff+product+cosine                  -> 82.90%  (FD=82.4 FS=82.8 MD=83.2 MS=83.2)
-  [  4/60] ps32_ss4     norm=power              pair=abs_diff+product+euclidean+cosine        -> 82.50%  (FD=82.8 FS=81.6 MD=81.2 MS=84.4)
-  [  5/60] ps32_ss4     norm=l2                 pair=abs_diff                                 -> 75.00%  (FD=75.2 FS=74.8 MD=71.2 MS=78.8)
-  [  6/60] ps32_ss4     norm=l2                 pair=abs_diff+product                         -> 80.50%  (FD=80.4 FS=79.6 MD=80.8 MS=81.2)
-  [  7/60] ps32_ss4     norm=l2                 pair=abs_diff+product+cosine                  -> 82.20%  (FD=82.4 FS=79.6 MD=81.6 MS=85.2)
-  [  8/60] ps32_ss4     norm=l2                 pair=abs_diff+product+euclidean+cosine        -> 80.00%  (FD=80.0 FS=75.6 MD=78.4 MS=86.0)
-  [  9/60] ps32_ss4     norm=zscore             pair=abs_diff                                 -> 81.60%  (FD=83.6 FS=82.4 MD=79.2 MS=81.2)
-  [ 10/60] ps32_ss4     norm=zscore             pair=abs_diff+product                         -> 83.40%  (FD=81.2 FS=84.4 MD=85.6 MS=82.4)
-  [ 11/60] ps32_ss4     norm=zscore             pair=abs_diff+product+cosine                  -> 81.90%  (FD=81.2 FS=82.4 MD=80.8 MS=83.2)
-  [ 12/60] ps32_ss4     norm=zscore             pair=abs_diff+product+euclidean+cosine        -> 84.00%  (FD=83.2 FS=83.6 MD=83.6 MS=85.6)
-  [ 13/60] ps32_ss4     norm=power+l2           pair=abs_diff                                 -> 82.80%  (FD=81.6 FS=82.8 MD=82.4 MS=84.4)
-  [ 14/60] ps32_ss4     norm=power+l2           pair=abs_diff+product                         -> 82.60%  (FD=82.0 FS=82.8 MD=81.6 MS=84.0)
-  [ 15/60] ps32_ss4     norm=power+l2           pair=abs_diff+product+cosine                  -> 83.00%  (FD=82.0 FS=84.4 MD=81.6 MS=84.0)
+#   Tag            Norm                 Pair                                           FD     FS     MD     MS  Overall
+-------------------------------------------------------------------------------------------------------------------
+1   ps16_ss8       power                abs_diff+product+euclidean+cosine           77.6%  86.8%  82.8%  85.6%   83.20%
+2   ps16_ss8       power                abs_diff                                    79.6%  87.2%  81.2%  84.4%   83.10%
+3   ps16_ss8       power+zscore         abs_diff+product+euclidean+cosine           80.8%  84.0%  83.6%  83.6%   83.00%
+4   ps16_ss8       power                abs_diff+product                            78.4%  86.4%  83.2%  83.2%   82.80%
+5   ps16_ss8       power+l2             abs_diff                                    78.4%  83.6%  82.8%  85.2%   82.50%
+6   ps16_ss8       power+l2             abs_diff+product+cosine                     80.0%  84.4%  81.6%  83.6%   82.40%
+7   ps16_ss8       power+l2             abs_diff+product                            78.8%  87.2%  81.2%  82.0%   82.30%
+8   ps16_ss8       zscore               abs_diff+product+cosine                     79.6%  83.6%  82.4%  82.0%   81.90%
+9   ps16_ss8       zscore               abs_diff+product+euclidean+cosine           80.0%  84.0%  81.2%  82.4%   81.90%
+10  ps16_ss8       power                abs_diff+product+cosine                     79.2%  84.0%  80.8%  82.0%   81.50%
+11  ps16_ss8       power+zscore         abs_diff+product                            78.4%  84.0%  82.0%  80.8%   81.30%
+12  ps16_ss8       power+l2             abs_diff+product+euclidean+cosine           74.8%  84.4%  79.2%  86.0%   81.10%
+13  ps16_ss8       l2                   abs_diff+product+cosine                     77.6%  83.6%  79.6%  83.6%   81.10%
+14  ps16_ss8       zscore               abs_diff+product                            79.6%  82.4%  82.4%  80.0%   81.10%
+15  ps16_ss8       power+zscore         abs_diff+product+cosine                     73.6%  85.2%  83.6%  81.6%   81.00%
+
+ps32_ss4
+======================================================================
+#   Tag            Norm                 Pair                                           FD     FS     MD     MS  Overall
+-------------------------------------------------------------------------------------------------------------------
+1   ps32_ss4       power                abs_diff+product                            84.0%  82.4%  85.2%  86.0%   84.40%
+2   ps32_ss4       power+l2             abs_diff+product+cosine                     84.0%  82.8%  83.6%  84.8%   83.80%
+3   ps32_ss4       power+l2             abs_diff                                    83.6%  83.6%  82.4%  84.4%   83.50%
+4   ps32_ss4       power+l2             abs_diff+product+euclidean+cosine           81.6%  84.0%  84.0%  83.2%   83.20%
+5   ps32_ss4       power+l2             abs_diff+product                            81.6%  82.0%  84.4%  84.4%   83.10%
+6   ps32_ss4       power+zscore         abs_diff+product+euclidean+cosine           80.8%  83.2%  83.2%  82.4%   82.40%
+7   ps32_ss4       power                abs_diff+product+cosine                     80.4%  83.6%  80.8%  84.0%   82.20%
+8   ps32_ss4       power                abs_diff+product+euclidean+cosine           80.4%  82.4%  82.8%  83.2%   82.20%
+9   ps32_ss4       power+zscore         abs_diff+product+cosine                     81.6%  82.0%  83.6%  81.6%   82.20%
+10  ps32_ss4       zscore               abs_diff+product                            81.2%  82.4%  81.6%  83.6%   82.20%
+11  ps32_ss4       power+zscore         abs_diff+product                            82.4%  82.8%  79.6%  83.6%   82.10%
+12  ps32_ss4       power                abs_diff                                    83.2%  79.6%  82.0%  83.2%   82.00%
+13  ps32_ss4       zscore               abs_diff+product+euclidean+cosine           83.6%  81.2%  82.0%  81.2%   82.00%
+14  ps32_ss4       l2                   abs_diff+product+euclidean+cosine           82.0%  80.0%  80.0%  85.2%   81.80%
+15  ps32_ss4       zscore               abs_diff+product+cosine                     79.6%  82.4%  84.8%  80.0%   81.70%
+
+ps32_ss2

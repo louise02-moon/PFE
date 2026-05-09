@@ -26,9 +26,9 @@ print(f"Device: {DEVICE}")
 # ①  USER SETTINGS
 # ══════════════════════════════════════════════════════════════════════════════
 
-DATASET_PATH = r"C:\Users\surface laptop 5\Downloads\KinFaceW-II\KinFaceW-II\images"
-OUTPUT_DIR   = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\Methodes_classiques\Hist-LDZP\HistZigZag"
-MAT_DIR      = r"C:\Users\surface laptop 5\OneDrive\Documents\PFE\lbp"
+DATASET_PATH = "/home/nadjia/KinFaceW-II/KinFaceW-II/images"   
+MAT_DIR      = "/home/nadjia/lbp"
+ZZ_DIR       = "/home/nadjia/ps16_ss8"
 
 EXTRACT = False    # True = extract, False = skip to grid search
 
@@ -45,8 +45,8 @@ NORM_CONFIGS = [
     "power",
     "l2",
     "zscore",
-    #("power", "l2"),
-    #("power", "zscore"),
+    ("power", "l2"),
+    ("power", "zscore"),
 ]
 
 PAIR_CONFIGS = [
@@ -149,10 +149,10 @@ def extract_histzigzag(image_path, patch_size, step_size):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def run_extraction():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(ZZ_DIR, exist_ok=True)
     for cfg in EXTRACT_CONFIGS:
         tag     = cfg["tag"]
-        cfg_dir = os.path.join(OUTPUT_DIR, tag)
+        cfg_dir = os.path.join(ZZ_DIR, tag)
         os.makedirs(cfg_dir, exist_ok=True)
         print(f"\nExtracting: {tag}  (patch={cfg['patch_size']} step={cfg['step_size']})")
         for rel in RELATIONS:
@@ -316,7 +316,7 @@ def train_lcnn(X_tr, y_tr, X_va, y_va, input_dim):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def run_experiment(cfg_tag, norm_cfg, pair_cfg):
-    cfg_dir = os.path.join(OUTPUT_DIR, cfg_tag)
+    cfg_dir = os.path.join(ZZ_DIR, cfg_tag)
     relation_means = []
 
     for rel in RELATIONS:

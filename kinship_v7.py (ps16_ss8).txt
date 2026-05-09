@@ -1,0 +1,228 @@
+(zz+facenet+arcface+resnet50+vggFace) (ps16_ss8)
+
+# ============================================================
+#  KINSHIP VERIFICATION PIPELINE — VS Code / Windows
+#  HistZigZag-LBP  (zscore → abs_diff + product + eucl + cos)
+#  + Deep models   (power+L2 → abs_diff + chi2 + prod + cos)
+#  → normalize each block → concatenate → LCNN classifier
+#  Dataset : KinFaceW-II   |   Protocol : 5-fold CV
+# ============================================================
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.00%
+  [OK] Father-Son              92.60%
+  [OK] Mother-Daughter         92.20%
+  [  ] Father-Daughter         86.80%
+-----------------------------------------------------------------
+  Overall Mean            89.95%
+
+
+
+
+# ============================================================
+#  KINSHIP VERIFICATION PIPELINE — Linux
+#  HistZigZag-LBP  (power → abs_diff + product + eucl + cos)
+#  + Deep models   (power+zscore → abs_diff + chi2 + prod + cos)
+#  → zscore each block → concatenate → LCNN classifier
+#  MS ensemble ×12  |  Dataset : KinFaceW-II  |  5-fold CV
+# ============================================================
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.40%
+  [OK] Father-Son              91.00%
+  [OK] Mother-Daughter         90.60%
+  [  ] Father-Daughter         87.00%
+-----------------------------------------------------------------
+  Overall Mean            89.25%
+
+
+
+# ============================================================
+#  KINSHIP VERIFICATION PIPELINE — Linux
+#  HistZigZag-LBP  (power → abs_diff + chi2 + product + eucl + cos)
+#  + Deep models   (power+zscore → abs_diff + chi2 + product + eucl + cos)
+#  → zscore each block → concatenate → LCNN classifier
+#  MS ensemble ×12  |  Dataset : KinFaceW-II  |  5-fold CV
+# ============================================================
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.80%
+  [OK] Father-Son              91.80%
+  [OK] Mother-Daughter         90.80%
+  [  ] Father-Daughter         87.60%
+-----------------------------------------------------------------
+  Overall Mean            89.75%
+
+
+
+
+
+
+
+
+# ============================================================
+#  KINSHIP VERIFICATION PIPELINE — Linux
+#  HistZigZag-LBP  (zscore → abs_diff + product + eucl + cos)
+#  + Deep models   (power+L2 → abs_diff + chi2 + prod + cos)
+#  → normalize each block → concatenate → LCNN classifier
+#  MS ensemble ×12  |  Dataset : KinFaceW-II  |  5-fold CV
+# ============================================================
+
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.40%
+  [OK] Father-Son              92.60%
+  [OK] Mother-Daughter         92.00%
+  [  ] Father-Daughter         87.60%
+-----------------------------------------------------------------
+  Overall Mean            90.15%
+
+
+
+
+
+hsv_ycbcr
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.80%
+  [OK] Father-Son              92.60%
+  [OK] Mother-Daughter         92.00%
+  [  ] Father-Daughter         87.40%
+-----------------------------------------------------------------
+  Overall Mean            90.20%
+
+
+hsv_ycbcr_lab
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.40%
+  [OK] Father-Son              92.80%
+  [OK] Mother-Daughter         92.20%
+  [  ] Father-Daughter         87.60%
+-----------------------------------------------------------------
+  Overall Mean            90.25%
+
+
+
+
+
+
+hsv_ycbcr_lab and no vgg
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.60%
+  [OK] Father-Son              92.60%
+  [OK] Mother-Daughter         92.00%
+  [  ] Father-Daughter         87.60%
+-----------------------------------------------------------------
+  Overall Mean            90.20%
+
+
+
+hsv_ycbcr_lab and no resnet50 
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.40%
+  [OK] Father-Son              91.20%
+  [OK] Mother-Daughter         90.60%
+  [  ] Father-Daughter         87.00%
+-----------------------------------------------------------------
+  Overall Mean            89.30%
+
+
+hsv_lab
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.60%
+  [OK] Father-Son              91.60%
+  [OK] Mother-Daughter         91.80%
+  [  ] Father-Daughter         87.20%
+-----------------------------------------------------------------
+  Overall Mean            89.80%
+
+
+
+
+ycbcr_lab
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              88.60%
+  [OK] Father-Son              90.60%
+  [OK] Mother-Daughter         92.60%
+  [  ] Father-Daughter         88.00%
+-----------------------------------------------------------------
+  Overall Mean            89.95%
+
+
+
+
+avec resnet101 au lieu de 50 (with vgg) (hsv_ycbcr_lab)
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [OK] Mother-Son              91.00%
+  [OK] Father-Son              92.00%
+  [OK] Mother-Daughter         90.00%
+  [  ] Father-Daughter         88.40%
+-----------------------------------------------------------------
+  Overall Mean            90.35%
+
+
+
+avec resnet101 (no vgg) (hsv_ycbcr_lab)
+=================================================================
+  FINAL RESULTS
+=================================================================
+  Relation                  Accuracy
+-----------------------------------------------------------------
+  [  ] Mother-Son              89.40%
+  [OK] Father-Son              91.20%
+  [OK] Mother-Daughter         90.80%
+  [  ] Father-Daughter         87.00%
+-----------------------------------------------------------------
+  Overall Mean            89.60%   
+
+
+
+
+
+hsv_ycbcr (resnet101 no vgg)
+
+
+
+photo biometerie 
+photo feature selection 
+nahdro 3la cross validation
+
